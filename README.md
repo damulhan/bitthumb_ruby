@@ -1,1 +1,4 @@
-# bitthumb_ruby
+# bitthumb_ruby 
+
+## not tested 
+
