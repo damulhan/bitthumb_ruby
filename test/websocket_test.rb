@@ -1,10 +1,26 @@
-manager = BitthumbRuby::WebSocketManager.new("ticker", ["BTC_KRW"])
+require_relative '../lib/bitthumb_ruby/websocket_manager'
 
-# 데이터를 가져오기
-3.times do
-  data = manager.get
-  puts data
+puts "starting..."
+
+manager = BitthumbRuby::WebSocketManager.new("ticker", ["KRW-BTC"])
+
+thread = Thread.new do 
+  manager.connect do
+    data = manager.get
+    if data
+      puts "=" * 50
+      puts data
+    else
+      puts "No data received in this iteration."
+    end
+    
+  end 
 end
 
-# WebSocket 연결 종료
-manager.terminate
+#loop do 
+  # WebSocket 연결 종료
+  #manager.terminate
+#end
+
+thread.join 
+
