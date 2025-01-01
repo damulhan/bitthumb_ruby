@@ -8,3 +8,5 @@ gemspec
 #   gem "rspec"         # 테스트 프레임워크
 #   gem "rubocop"       # 코드 스타일 체크
 # end
+
+gem 'jwt'

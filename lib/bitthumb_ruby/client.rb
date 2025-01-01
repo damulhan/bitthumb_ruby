@@ -4,11 +4,11 @@ module BitthumbRuby
 
     # Initializes a new Client instance.
     #
-    # If conkey and seckey are given, it also initializes a new PrivateApi
+    # If apikey and seckey are given, it also initializes a new PrivateApi
     # instance and assigns it to the instance variable.
-    def initialize(conkey = nil, seckey = nil)
+    def initialize(apikey = nil, seckey = nil)
       @public_api = PublicApi.new
-      @private_api = conkey && seckey ? PrivateApi.new(conkey, seckey) : nil
+      @private_api = apikey && seckey ? PrivateApi.new(apikey, seckey) : nil
     end
   end
 end

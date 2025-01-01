@@ -1,0 +1,2 @@
+BITHUMB_APIKEY="apikey"
+BITHUMB_SECKEY="seckey"

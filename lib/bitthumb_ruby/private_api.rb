@@ -1,11 +1,16 @@
 require 'openssl'
 require 'base64'
 require 'httparty'
+# require 'json'
+require 'uri'
+require 'jwt'
+require 'securerandom'
 
 module BitthumbRuby
   class PrivateApi
     include HTTParty
-    base_uri 'https://api.bithumb.com'
+    base_uri 'https://api.bithumb.com/v1'
+    debug_output $stdout
 
     # Initializes a new PrivateApi instance.
     #
@@ -16,58 +21,140 @@ module BitthumbRuby
       @seckey = seckey
     end
 
-    # Retrieves information about the account associated with the API key.
+    # 전체 계좌 조회
     #
     # @param params [Hash] A hash of parameters to send along with the request.
     # @return [HTTParty::Response] The response containing the account information.
-    def account(params = {})
-      post_request('/info/account', params)
+    def accounts
+      get_request('/accounts', {})
     end
 
-    # Retrieves the current balance of the account associated with the API key.
-    #
-    # @param params [Hash] A hash of parameters to send along with the request.
-    # @return [HTTParty::Response] The response containing the account balance.
-    def balance(params = {})
-      post_request('/info/balance', params)
+    ########################################################
+    # 주문
+    ########################################################
+
+    # 주문 가능 정보
+    def balance(market)
+      get_request('/orders/chance', params: { market: })
     end
 
-    # Places an order to Bithumb.
-    #
-    # @param params [Hash] A hash of parameters to send along with the request.
-    # @option params [String] :order_currency The currency to order.
-    # @option params [String] :payment_currency The currency to pay, default is "KRW".
-    # @option params [String] :units The units of the currency to order.
-    # @option params [String] :price The price to order at.
-    # @option params [String] :type The type of the order, either "bid" or "ask".
-    # @return [HTTParty::Response] The response containing the result of the order.
-    def place(params = {})
-      post_request('/trade/place', params)
+    # 개별 주문 조회
+    # 주문 UUID로 해당 주문의 내역을 조회합니다.
+    # @param uuid [String] 주문 UUID
+    def get_order(uuid)
+      get_request('/orders/chance', params: { uuid: })
+    end
+
+    # 주문 리스트 조회
+    # @param market	마켓 아이디	String
+    # @param uuids	주문 UUID의 목록	Array
+    # @param state	주문 상태
+    # - wait : 체결 대기 (default)
+    # - watch : 예약주문 대기
+    # - done : 전체 체결 완료
+    # - cancel : 주문 취소	String
+    # @param states	주문 상태의 목록
+    # - 일반주문(wait, done, cancel)과 자동주문(watch)은 혼합하여 조회하실 수 없습니다.	Array
+    # @param page	페이지 수 (default :1)	Number
+    # @param limit	개수 제한 (default: 100, limit: 100)	Number
+    # @param order_by	정렬방식
+    # - asc : 오름차순
+    # - desc : 내림차순 (default)	String
+    def list_orders(params = { market: '', uuids: [], state: 'wait', states: [], page: 1, limit: 100,
+                               order_by: 'desc' })
+      get_request('/orders', params: params)
+    end
+
+    # 주문 취소 접수
+    # @param uuid	주문 UUID	String
+    def cancel_order(uuid)
+      delete_request('/order', params: { uuid: })
+    end
+
+    # 주문하기
+    # @param market *	마켓 ID	String
+    # @param side *	주문 종류
+    # - bid : 매수
+    # - ask : 매도	String
+    # @param volume *	주문량 (지정가, 시장가 매도 시 필수)	NumberString
+    # @param price *	주문 가격. (지정가, 시장가 매수 시 필수)
+    #  ex) KRW-BTC 마켓에서 1BTC당 1,000 KRW로 거래할 경우, 값은 1000 이 된다.
+    #  ex) KRW-BTC 마켓에서 1BTC당 매도 1호가가 500 KRW 인 경우, 시장가 매수 시 값을 1000으로 세팅하면 2BTC가 매수된다.
+    #  (수수료가 존재하거나 매도 1호가의 수량에 따라 상이할 수 있음)	NumberString
+    # @param ord_type*	주문 타입
+    # - limit : 지정가 주문
+    # - price : 시장가 주문(매수)
+    # - market : 시장가 주문(매도)	String
+    def create_order(params = { market: '', side: '', volume: '', price: '', ord_type: 'limit' })
+      post_request('/orders', params: params)
     end
 
     private
 
-    # Performs a POST request to the specified endpoint with the given parameters
-    # and authentication information.
-    #
-    # @param endpoint [String] The endpoint to make the request to.
-    # @param params [Hash] A hash of parameters to send along with the request.
-    # @return [HTTParty::Response] The response from the server.
     def post_request(endpoint, params)
-      nonce = (Time.now.to_f * 1000).to_i.to_s
-      signature = create_signature(endpoint, params, nonce)
       headers = {
-        'Api-Key' => @conkey,
-        'Api-Sign' => signature,
-        'Api-Nonce' => nonce
+        'Authorization': "Bearer #{create_token(params)}",
+        'Content-Type': 'application/json; charset=utf-8'
       }
-      self.class.post(endpoint, headers: headers, body: params)
+      response = self.class.post(endpoint, headers: headers, body: params.to_json)
+
+      # 응답 디버깅
+      puts "Response Status: #{response.code}"
+      puts "Response Body: #{response.body}"
+
+      response
+    rescue JSON::ParserError => e
+      puts "JSON Parsing Error: #{e.message}"
+      nil
+    rescue StandardError => e
+      puts "Request Error: #{e.message}"
+      nil
     end
 
-    def create_signature(endpoint, params, nonce)
-      data = "#{endpoint}#{nonce}#{URI.encode_www_form(params)}"
-      hmac = OpenSSL::HMAC.digest('sha512', @seckey, data)
-      Base64.strict_encode64(hmac)
+    def get_request(endpoint, params)
+      headers = {
+        'Authorization': "Bearer #{create_token(params)}",
+        'Content-Type': 'application/json; charset=utf-8'
+      }
+      self.class.get(endpoint, headers: headers, body: params)
+    rescue JSON::ParserError => e
+      puts "JSON Parsing Error: #{e.message}"
+      nil
+    rescue StandardError => e
+      puts "Request Error: #{e.message}"
+      nil
+    end
+
+    def delete_request(endpoint, params)
+      headers = {
+        'Authorization': "Bearer #{create_token(params)}",
+        'Content-Type': 'application/json; charset=utf-8'
+      }
+      self.class.delete(endpoint, headers: headers, body: params)
+    rescue JSON::ParserError => e
+      puts "JSON Parsing Error: #{e.message}"
+      nil
+    rescue StandardError => e
+      puts "Request Error: #{e.message}"
+      nil
+    end
+
+    def create_token(params)
+      payload = {
+        access_key: @conkey,
+        nonce: SecureRandom.uuid,
+        timestamp: (Time.now.to_f * 1000).to_i
+      }
+
+      if params.any?
+        query = URI.encode_www_form(params)
+        query_hash = OpenSSL::HMAC.hexdigest('sha512', @seckey, query)
+        payload[:query_hash] = query_hash
+        payload[:query_hash_alg] = 'SHA512'
+      end
+
+      # JWT.encode의 두 번째 인자로 전달되는 키와 알고리즘을 명시적으로 지정
+      JWT.encode(payload, @seckey, 'HS512')
     end
   end
 end

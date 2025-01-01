@@ -5,49 +5,53 @@ require 'thread'
 
 module BitthumbRuby
   class WebSocketManager
-    BITHUMB_WS_URL = 'wss://pubwss.bithumb.com/pub/ws'
-
-    # Initializes a new WebSocketManager instance.
-    #
-    # @param type [String] The type of the WebSocket message to subscribe.
-    # @param symbols [Array<String>] The symbols to subscribe. Each symbol should be in the form of "BTC_KRW" or "ETH_KRW".
-    # @param tick_types [Array<String>] The tick types to subscribe. Each tick type should be in the form of "1H" or "1D". Default is ["1H"].
-    # @param qsize [Integer] The size of the internal queue. The queue is bounded so that it will not consume too much memory. If the queue is full, it will drop the oldest message. Default is 1000.
-    def initialize(type, symbols, tick_types = ['1H'], _qsize = 1000)
+    BITHUMB_WS_URL = 'wss://ws-api.bithumb.com/websocket/v1'
+    
+    def initialize(type, codes, qsize = 1000)
       @type = type
-      @symbols = symbols
-      @tick_types = tick_types
+      @codes = codes
       @queue = Queue.new
+      @qsize = qsize
       @alive = false
     end
 
-    # Connects to Bithumb WebSocket and subscribes to given type and symbols.
-    #
-    # When connected, it will receive messages from Bithumb WebSocket and
-    # stores them in an internal queue. The queue is bounded so that it will
-    # not consume too much memory. If the queue is full, it will drop the
-    # oldest message.
-    #
-    # When disconnected, it will stop the EventMachine loop and set @alive
-    # to false.
-    def connect
+    def connect()
       @alive = true
       EM.run do
         ws = Faye::WebSocket::Client.new(BITHUMB_WS_URL)
 
         ws.on :open do |_|
           puts 'Connected to Bithumb WebSocket'
-          subscribe_message = {
+          payload = [
+            { ticket: 'test example' },
+            { format: 'SIMPLE' },
+          ]
+          payload << {
             type: @type,
-            symbols: @symbols,
-            tickTypes: @tick_types
+            codes: @codes,
+            #isOnlySanpshot: false,
+            #isOnlyRealtime: false,            
           }
-          ws.send(subscribe_message.to_json)
+          #pp payload.to_json
+          # payload example: [{"ticket":"test example"},{"type":"ticker","codes":["KRW-BTC","BTC-ETH"]},{"format":"SIMPLE"}]
+
+          ws.send(payload.to_json)
         end
 
-        ws.on :message do |event|
-          data = JSON.parse(event.data)
-          @queue.push(data) if @queue.size < qsize
+        ws.on :message do |event|                    
+          #puts "Raw data received: #{event.data}"
+          data = JSON.parse(event.data.pack('C*'))
+          #puts "data received: packed: #{data}"
+          begin
+            if @queue.size < @qsize
+              @queue.push(data)
+              puts "Data added to queue. Current size: #{@queue.size}"
+            end
+          rescue => e
+            puts "Error parsing message: #{e.message}"
+          end
+          
+          yield data if block_given?
         end
 
         ws.on :close do |event|
@@ -55,26 +59,32 @@ module BitthumbRuby
           EM.stop
           @alive = false
         end
+        
+        ws.on :error do |error|
+          logger.error "WebSocket error: #{error}"
+        end
       end
+      
+      puts 'after: connect called...'
     end
 
-    # Retrieves a message from the internal queue. If the queue is empty,
-    # it will connect to Bithumb WebSocket and subscribe to the given type
-    # and symbols, and then retrieve the first message from the queue.
-    #
-    # @return [Hash] The message from the internal queue.
     def get
       connect unless @alive
-      @queue.pop
+      #pp 'get: que size', @queue.size
+      
+      10.times do
+        return @queue.pop(true) if !@queue.empty?
+        #puts "Queue is empty. Retrying in 1 second..."
+        sleep(1)
+      end
+      raise "No data available in the queue after multiple attempts."
     end
 
-    # Terminates the WebSocket connection and stops the EventMachine reactor if it is running.
-    #
-    # Sets the @alive flag to false to indicate that the WebSocket connection is no longer active.
-    # If the EventMachine reactor is currently running, it will be stopped.
     def terminate
       @alive = false
       EM.stop if EM.reactor_running?
+      
+      puts "terminate called"
     end
   end
 end
