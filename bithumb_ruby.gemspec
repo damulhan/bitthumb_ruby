@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
-  spec.name          = "bitthumb_ruby"
-  spec.version       = "0.1.0"
+  spec.name          = "bithumb_ruby"
+  spec.version       = "0.1.1"
   spec.summary       = "Ruby wrapper for Bithumb API"
   spec.authors       = ["Na, Eui-Taik"]
   spec.email         = ["damulhan@gmail.com"]

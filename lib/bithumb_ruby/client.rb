@@ -1,4 +1,4 @@
-module BitthumbRuby
+module BithumbRuby
   class Client
     attr_reader :public_api, :private_api
 

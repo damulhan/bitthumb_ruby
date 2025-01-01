@@ -6,7 +6,7 @@ require 'uri'
 require 'jwt'
 require 'securerandom'
 
-module BitthumbRuby
+module BithumbRuby
   class PrivateApi
     include HTTParty
     base_uri 'https://api.bithumb.com/v1'

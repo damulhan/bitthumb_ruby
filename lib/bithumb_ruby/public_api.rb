@@ -1,7 +1,7 @@
 require 'httparty'
 require 'time'
 
-module BitthumbRuby
+module BithumbRuby
   class PublicApi
     include HTTParty
 

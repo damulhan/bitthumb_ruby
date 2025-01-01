@@ -1,7 +1,7 @@
-require_relative '../lib/bitthumb_ruby/private_api'
+require_relative '../lib/bithumb_ruby/private_api'
 require_relative "./.env"
 
-# BitthumbRuby 모듈의 PrivateApi 사용 예제
+# BithumbRuby 모듈의 PrivateApi 사용 예제
 module PrivateApiExample
   def self.run
     # Bithumb API Key와 Secret Key
@@ -13,7 +13,7 @@ module PrivateApiExample
     seckey = BITHUMB_SECKEY
 
     # PrivateApi 인스턴스 생성
-    private_api = BitthumbRuby::PrivateApi.new(apikey, seckey)
+    private_api = BithumbRuby::PrivateApi.new(apikey, seckey)
 
     # 1. 계정 정보 조회 예제
     puts "1. Account Information:"

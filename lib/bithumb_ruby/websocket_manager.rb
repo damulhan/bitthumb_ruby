@@ -3,7 +3,7 @@ require 'eventmachine'
 require 'json'
 require 'thread'
 
-module BitthumbRuby
+module BithumbRuby
   class WebSocketManager
     BITHUMB_WS_URL = 'wss://ws-api.bithumb.com/websocket/v1'
     

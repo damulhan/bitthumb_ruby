@@ -1,8 +1,8 @@
-require_relative '../lib/bitthumb_ruby/websocket_manager'
+require_relative '../lib/bithumb_ruby/websocket_manager'
 
 puts "starting..."
 
-manager = BitthumbRuby::WebSocketManager.new("ticker", ["KRW-BTC"])
+manager = BithumbRuby::WebSocketManager.new("ticker", ["KRW-BTC"])
 
 thread = Thread.new do 
   manager.connect do

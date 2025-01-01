@@ -1,10 +1,10 @@
-require_relative '../lib/bitthumb_ruby/public_api'
+require_relative '../lib/bithumb_ruby/public_api'
 
-# BitthumbRuby 모듈의 PublicApi 사용 예제
+# BithumbRuby 모듈의 PublicApi 사용 예제
 module Example
   def self.run
     # PublicApi 인스턴스 생성
-    public_api = BitthumbRuby::PublicApi.new
+    public_api = BithumbRuby::PublicApi.new
 
     # Ticker API 예제: 특정 암호화폐의 현재 시세를 가져옵니다.
     puts '1. Ticker Data for BTC_KRW:'

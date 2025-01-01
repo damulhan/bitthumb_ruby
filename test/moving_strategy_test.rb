@@ -3,7 +3,7 @@ require 'json'
 require 'byebug'
 require 'thread'
 
-require_relative '../lib/bitthumb_ruby/public_api'
+require_relative '../lib/bithumb_ruby/public_api'
 
 class MovingAverageStrategy
   def initialize(api, market: 'KRW-BTC', candle_unit: 10, short_window: 5, long_window: 20, rsi_period: 14, stop_loss: 0.05, take_profit: 0.10)
@@ -148,6 +148,6 @@ pp candles
 end
 
 # 실행
-api = BitthumbRuby::PublicApi.new
+api = BithumbRuby::PublicApi.new
 strategy = MovingAverageStrategy.new(api)
 strategy.run
