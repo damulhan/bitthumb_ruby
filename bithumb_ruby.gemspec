@@ -9,4 +9,5 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "httparty"
   spec.add_runtime_dependency "faye-websocket"
   spec.add_runtime_dependency "eventmachine"
+  spec.add_runtime_dependency "jwt"
 end
