@@ -17,10 +17,10 @@ class MovingAverageStrategy
     @take_profit = take_profit # 익절 비율 (예: 0.10은 10% 익절)
     @position = nil # 현재 포지션 (nil, :buy, :sell)
     @buy_price = nil # 매수 가격 기록
-    
+
     # 큐 초기화: 최대 크기를 짧은 기간(최소 필요 데이터 크기)보다 커야 합니다.
     @candle_queue = Queue.new
-    @max_queue_size = [@short_window, @long_window, @rsi_period].max + 50  # 50을 추가하여 여유 공간 제공    
+    @max_queue_size = [@short_window, @long_window, @rsi_period].max + 50  # 50을 추가하여 여유 공간 제공
   end
 
   def fetch_and_store_candle_data
@@ -84,8 +84,6 @@ class MovingAverageStrategy
     candles = get_last_candles([@short_window, @long_window, @rsi_period].max)
     return if candles.size < @rsi_period # 충분한 데이터가 없으면 실행하지 않음
 
-pp candles 
-
     short_ma, long_ma = calculate_moving_averages(candles)
     rsi = calculate_rsi(candles)
     macd = calculate_macd(candles)
@@ -117,7 +115,7 @@ pp candles
 
   def check_stop_loss(current_price)
     return false if @buy_price.nil?
-    
+
     # 손절매 조건: 매수 가격에서 지정한 비율 이상 하락
     if current_price <= @buy_price * (1 - @stop_loss)
       puts "Stop loss triggered! Selling at #{current_price}."
@@ -129,7 +127,7 @@ pp candles
 
   def check_take_profit(current_price)
     return false if @buy_price.nil?
-    
+
     # 익절 조건: 매수 가격에서 지정한 비율 이상 상승
     if current_price >= @buy_price * (1 + @take_profit)
       puts "Take profit triggered! Selling at #{current_price}."
