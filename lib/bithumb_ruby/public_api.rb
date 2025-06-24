@@ -16,7 +16,7 @@ module BithumbRuby
     # @param count [Integer] 캔들 개수(최대 200개까지 요청 가능)
     # @param convertingPriceUnit [String] 종가 환산 화폐 단위 (생략할 수 있으며 KRW로 입력한 경우 원화 환산 가격으로 반환됨)
     def candles(market, candle_type: 'minutes', to: nil, count: 200, unit: 1, converting_price_unit: 'KRW')
-      raise(ArgumentError, 'Count must be less than or equal to 200') if count > 200
+      raise(ArgumentError, "Count must be less than or equal to 200. (current value: #{count})") if count > 200
 
       to = Time.now.strftime('%Y-%m-%dT%H:%M:%S') if to.nil?
       #to = Time.now.iso8601 if to.nil?
